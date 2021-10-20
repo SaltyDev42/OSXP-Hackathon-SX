@@ -54,15 +54,13 @@
         replace: "admin_password=verycomplexpassword123!"
       - regexp: "# docker_logger=journald"
         replace: "docker_logger=journald"
-      - regexp: "awx_task_hostname=awx"
-        replace: "awx_task_hostname=awx-task.{{ domain }}"
-      - regexp: "awx_web_hostname=awxweb"
-        replace: "awx_web_hostname=awx.{{ domain }}"
       ## those needs to be present in the target host
       - regexp: "#ssl_certificate="
         replace: 'ssl_certificate="/tmp/certbot/config/live/awx.{{ domain }}/fullchain.pem"'
       - regexp: "#ssl_certificate_key="
         replace: 'ssl_certificate_key="/tmp/certbot/config/live/awx.{{ domain }}/privkey.pem"'
+      - regexp: "#project_data_dir=/var/lib/awx/projects"
+        replace: "project_data_dir=/var/lib/awx/projects"
     
   - name: "Add become=true to install.yml file "
     lineinfile:
