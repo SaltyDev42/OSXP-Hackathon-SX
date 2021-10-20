@@ -49,12 +49,37 @@
       replace: "{{ item.replace }}"
     loop:
       - regexp: "localhost ansible_connection=local"
-        replace: "awx.osxp.startx.local"
+        replace: "awx.{{ domainlocal }}"
       - regexp: "# admin_password=password"
         replace: "admin_password=verycomplexpassword123!"
       - regexp: "# docker_logger=journald"
         replace: "docker_logger=journald"
       - regexp: "awx_task_hostname=awx"
-        replace: "awx_task_hostname=awx-task.osxp.startx.fr"
+        replace: "awx_task_hostname=awx-task.{{ domain }}"
       - regexp: "awx_web_hostname=awxweb"
-        replace: "awx_web_hostname=awx.osxp.startx.fr"
+        replace: "awx_web_hostname=awx.{{ domain }}"
+      ## those needs to be present in the target host
+      - regexp: "#ssl_certificate="
+        replace: 'ssl_certificate="/tmp/certbot/config/live/awx.{{ domain }}/fullchain.pem"'
+      - regexp: "#ssl_certificate_key="
+        replace: 'ssl_certificate_key="/tmp/certbot/config/live/awx.{{ domain }}/privkey.pem"'
+    
+  - name: "Add become=true to install.yml file "
+    lineinfile:
+      firstmatch: true
+      insertafter: "hosts: all"
+      line: "  become: true"
+      path: "awx/installer/install.yml"
+      state: present
+
+  - name: "Generate Certificate certbot"
+    ## secret key are too sensitive to be logged remotely
+    no_log: true
+    shell: >
+      AWS_ACCESS_KEY_ID="{{ aws_access_key }}"
+      AWS_SECRET_ACCESS_KEY="{{ aws_secret_key }}"
+      certbot-3 certonly --config-dir ~/certbot/config --work-dir ~/certbot/work --logs-dir ~/certbot/logs
+      --dns-route53 -d awx.{{ domain }} -d awx-task.{{domain}} --agree-tos -m {{ mail }} --no-eff-email -n
+
+  - name: "Copy certificate file to Host AWX"
+    shell: "rsync -Lr certbot awx@awx.{{ domainlocal }}:/tmp"

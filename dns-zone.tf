@@ -1,6 +1,6 @@
 ## Primary Zone
 data "aws_route53_zone" "main" {
-  name = "${var.domain}."
+  name = "${var.domain}"
 }
 
 ## Sub Zone PUBLIC RECORDS
@@ -13,7 +13,7 @@ resource "aws_route53_zone" "osxp" {
 }
 
 resource "aws_route53_zone" "osxp_private" {
-  name = "${var.project}.startx.local."
+  name = "${var.project}.startx.local"
   vpc {
     vpc_id = aws_vpc.osxp.id
   }
