@@ -11,7 +11,7 @@ users:
     shell: /bin/bash
     primary_group: ${name}
     sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, wheel
+    groups: users, wheel, root
     lock_passwd: false
     ssh_authorized_keys:
       - ${pubkey}
@@ -19,10 +19,3 @@ users:
 prefer_fqdn_over_hostname: true
 hostname: ${name}
 fqdn: ${name}.${project}.${domain}
-
-write_files:
-  - content: ${privkey}
-    encoding: base64
-    permissions: 0440
-    owner: 1000:root
-    path: /tmp/id_ed25519

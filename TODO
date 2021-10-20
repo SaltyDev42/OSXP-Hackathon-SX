@@ -1,0 +1,2 @@
+LETS ENCRYPT
+AWS_ACCESS_KEY_ID="" AWS_SECRET_ACCESS_KEY="" certbot-3 certonly --config-dir config --work-dir work --logs-dir logs --dns-route53 -d osxp.startx.fr --agree-tos -m jacques.ye@startx.fr --no-eff-email -n

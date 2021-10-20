@@ -1,5 +1,5 @@
 ## Image Rocky Linux, Multiple image available, normal is used
-data "aws_ami" "image" {
+data "aws_ami" "rocky" {
   most_recent = true
   owners      = ["679593333241"]
 
@@ -10,7 +10,7 @@ data "aws_ami" "image" {
 }
 
 resource "aws_instance" "osxp_bastion" {
-  ami                    = data.aws_ami.image.image_id
+  ami                    = data.aws_ami.rocky.image_id
   instance_type          = "t2.small"
   subnet_id              = aws_subnet.osxp.id
   vpc_security_group_ids = [aws_security_group.osxp_bastion.id]
@@ -18,12 +18,11 @@ resource "aws_instance" "osxp_bastion" {
   associate_public_ip_address = true
   user_data = templatefile("${path.module}/scripts/bastion.yaml.tpl", {
     pubkey   = file("${path.module}/bastion.key.pub")
-    privkey  = filebase64("${path.module}/awx.key")
     name     = "bastion"
     project  = var.project
     domain   = var.domain
   })
-
+  
   tags = {
     Name  = "${var.project}-bastion"
     TTL   = "86400"
@@ -32,7 +31,7 @@ resource "aws_instance" "osxp_bastion" {
 }
 
 resource "aws_instance" "osxp_awx" {
-  ami                    = data.aws_ami.image.image_id
+  ami                    = data.aws_ami.rocky.image_id
   instance_type          = "t2.xlarge"
   subnet_id              = aws_subnet.osxp.id
   vpc_security_group_ids = [aws_security_group.osxp_awx.id]

@@ -1,0 +1,60 @@
+---
+- name: Install bastion compononent for AWX
+  hosts: all
+  become: true
+
+  tasks:
+  - name: "Install EPEL repo"
+    package:
+      name: epel-release 
+      state: present
+
+  - name: "Install ansible repo"
+    package:
+      name: centos-release-ansible-29
+      state: present
+
+  - name: "Install package"
+    package:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - git
+      - ansible
+      - python3-certbot
+      - python3-certbot-dns-route53
+
+- name: Prepare bastion for AWX
+  hosts: all
+  become: false
+  tasks:
+  - name: "add private SSH key file (lazyman)"
+    copy:
+      src: awx.key
+      dest: .ssh/id_ed25519
+      mode: u=r,go=
+
+  - name: "Clone AWX repository"
+    git:
+      clone: yes
+      dest: "awx"
+      repo: "https://github.com/ansible/awx"
+      force: yes
+      version: "17.1.0"
+
+  - name: "Change ansible inventory file to target"
+    replace:
+      path: "awx/installer/inventory"
+      regexp: "{{ item.regexp }}"
+      replace: "{{ item.replace }}"
+    loop:
+      - regexp: "localhost ansible_connection=local"
+        replace: "awx.osxp.startx.local"
+      - regexp: "# admin_password=password"
+        replace: "admin_password=verycomplexpassword123!"
+      - regexp: "# docker_logger=journald"
+        replace: "docker_logger=journald"
+      - regexp: "awx_task_hostname=awx"
+        replace: "awx_task_hostname=awx-task.osxp.startx.fr"
+      - regexp: "awx_web_hostname=awxweb"
+        replace: "awx_web_hostname=awx.osxp.startx.fr"

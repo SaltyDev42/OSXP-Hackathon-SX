@@ -3,11 +3,23 @@ data "aws_route53_zone" "main" {
   name = "${var.domain}."
 }
 
-## Sub Zone
+## Sub Zone PUBLIC RECORDS
 resource "aws_route53_zone" "osxp" {
   name = "${var.project}.${data.aws_route53_zone.main.name}"
   tags = {
     Name  = "${var.project}-zone"
+    owner = var.project
+  }
+}
+
+resource "aws_route53_zone" "osxp_private" {
+  name = "${var.project}.startx.local."
+  vpc {
+    vpc_id = aws_vpc.osxp.id
+  }
+
+  tags = {
+    Name = "${var.project}-localzone"
     owner = var.project
   }
 }

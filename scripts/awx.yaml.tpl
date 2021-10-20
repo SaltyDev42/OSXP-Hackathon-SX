@@ -11,28 +11,20 @@ users:
     shell: /bin/bash
     primary_group: ${name}
     sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, wheel
+    groups: users, wheel, root
     lock_passwd: false
     ssh_authorized_keys:
       - ${pubkey}
-
-yum_repos:
-  docker-ce-stable:
-    name: Docker CE Stable - $basesearch
-    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
-    enabled: 1
-    gpgcheck: 1
-    gpgkey: https://download.docker.com/linux/centos/gpg
 
 prefer_fqdn_over_hostname: true
 hostname: ${name}
 fqdn: ${name}.${project}.${domain}
 
-packages:
-  - epel-release
-  - centos-release-ansible-29
-  - ansible
-  - python3
-  - python3-pip
-  - docker-ce
-  - git
+runcmd:
+  - "sudo yum install python3 -y"
+  - "sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo"
+  - "sudo yum install docker-ce -y"
+  - "sudo pip3 install --upgrade pip"
+  - "sudo pip3 install docker-compose"
+  - "systemctl enable --now docker"
+  - "alternatives --install /usr/bin/docker-compose docker-compose /usr/local/bin/docker-compose 100"
