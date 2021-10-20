@@ -13,7 +13,7 @@ resource "aws_route53_zone" "osxp" {
 }
 
 resource "aws_route53_zone" "osxp_private" {
-  name = "${var.project}.startx.local"
+  name = "${var.project}.${var.domainlocal}"
   vpc {
     vpc_id = aws_vpc.osxp.id
   }

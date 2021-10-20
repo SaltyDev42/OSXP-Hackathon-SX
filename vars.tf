@@ -6,3 +6,7 @@ variable "project" {
   type    = string
   default = "osxp"
 }
+
+variable "domainlocal" {
+  type = string
+}
