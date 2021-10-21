@@ -3,7 +3,7 @@ output "certbot_accesskey" {
 }
 
 output "certbot_secretkey" {
-  value = aws_iam_access_key.osxp_certbot.secret
+  value     = aws_iam_access_key.osxp_certbot.secret
   sensitive = true
 }
 

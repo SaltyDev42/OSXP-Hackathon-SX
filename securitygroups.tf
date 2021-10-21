@@ -20,6 +20,40 @@ resource "aws_security_group" "osxp_bastion" {
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
   }
+
+  tags = {
+    Name  = "${var.project}-bastion"
+    owner = "${var.project}"
+  }
+}
+
+resource "aws_security_group" "osxp_all" {
+  vpc_id      = aws_vpc.osxp.id
+  name        = "osxp-unrestricted"
+  description = "Unrestricted access"
+
+  ingress {
+    description      = "Unrestricted internet"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    description      = "Unrestricted internet"
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name  = "${var.project}-all"
+    owner = "${var.project}"
+  }
 }
 
 resource "aws_security_group" "osxp_awx" {
@@ -51,5 +85,10 @@ resource "aws_security_group" "osxp_awx" {
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name  = "${var.project}-awx"
+    owner = "${var.project}"
   }
 }

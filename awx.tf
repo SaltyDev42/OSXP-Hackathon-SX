@@ -17,12 +17,12 @@ resource "aws_instance" "osxp_bastion" {
 
   associate_public_ip_address = true
   user_data = templatefile("${path.module}/scripts/bastion.yaml.tpl", {
-    pubkey   = file("${path.module}/bastion.key.pub")
-    name     = "bastion"
-    project  = var.project
-    domain   = var.domain
+    pubkey  = file("${path.module}/bastion.key.pub")
+    name    = "bastion"
+    project = var.project
+    domain  = var.domain
   })
-  
+
   tags = {
     Name  = "${var.project}-bastion"
     TTL   = "86400"

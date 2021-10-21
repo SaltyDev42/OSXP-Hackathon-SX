@@ -5,10 +5,10 @@ terraform {
       version = "~> 3.63"
     }
     local = {
-      source = "hashicorp/local"
+      source  = "hashicorp/local"
       version = "2.1.0"
     }
-  }  
+  }
 }
 
 provider "local" {

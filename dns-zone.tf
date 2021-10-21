@@ -1,6 +1,6 @@
 ## Primary Zone
 data "aws_route53_zone" "main" {
-  name = "${var.domain}"
+  name = var.domain
 }
 
 ## Sub Zone PUBLIC RECORDS
@@ -19,7 +19,7 @@ resource "aws_route53_zone" "osxp_private" {
   }
 
   tags = {
-    Name = "${var.project}-localzone"
+    Name  = "${var.project}-localzone"
     owner = var.project
   }
 }

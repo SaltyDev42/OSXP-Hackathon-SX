@@ -1,0 +1,128 @@
+---
+- name: Configuring AWX for Provisioning and Destruction
+  hosts: localhost
+  connection: local
+  become: false
+  tasks:
+
+  - name: "Create AWX Project"
+    awx.awx.project:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      description: "This is not going to be very fun"
+      name: "EC2 manager"
+      organization: "Default"
+      scm_branch: "main"
+      scm_type: "git"
+      scm_url: "https://github.com/SaltyDev42/OSXP-Ansible-SX"
+      state: "present"
+
+  - name: "Create AWX Inventory"
+    awx.awx.inventory:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWX localhost baremetal"
+      description: "AWX Baremetal"
+      organization: "Default"
+      state: present
+
+  - name: "Create AWX Host"
+    awx.awx.host:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "{{ awx_localname }}"
+      description: "AWX is containerized, we want to be on the host instead of the container"
+      inventory: "AWX localhost baremetal"
+      enabled: yes
+      state: present
+
+  - name: "Create AWS Credentials"
+    awx.awx.credential:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWS token"
+      description: "used for provisioning"
+      organization: "Default"
+      credential_type: "Amazon Web Services"
+      inputs:
+        username: "{{ aws_access_key }}"
+        password: "{{ aws_secret_key }}"
+        security_token: ""
+      state: present
+
+  - name: "Create Tower Credentials"
+    awx.awx.credential:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWX oauth"
+      description: "used for provisioning"
+      organization: "Default"
+      credential_type: "Ansible Tower"
+      inputs:
+        verify_ssl: yes
+        host: "{{ awx_hostname }}"
+        oauth_token: "{{ awx_token }}"
+      state: present
+
+  - name: "Create Tower SSH Credentials"
+    awx.awx.credential:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWX SSH"
+      description: "used for localhost connection"
+      organization: "Default"
+      credential_type: "Machine"
+      inputs:
+        username: "awx"
+        ssh_key_data: "{{ lookup('file', '../awx.key') }}"
+        become_method: "sudo"
+        become_username: "root"
+
+  - name: "Create AWX Template"
+    awx.awx.job_template:
+      name: "EC2 Provisioner"
+      project: "EC2 manager"
+      organization: "Default"
+      allow_simultaneous: no
+      become_enabled: no
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      playbook: "foo.yaml" ## TO BE MODIFIED
+      inventory: "AWX localhost baremetal"
+      credentials:
+        - "AWX SSH"
+        - "AWX oauth"
+      survey_enabled: yes
+      ask_variables_on_launch: yes
+      job_type: "run"
+      survey_spec:
+        name: "Simple Survey"
+        description: "Description of the simple survey"
+        spec:
+          - type: "text"
+            question_name: "Prenom ?"
+            question_description: ""
+            variable: "firstname"
+            choices: ""
+            min: 0
+            max: 255
+            required: yes
+            default: ""
+          - type: "text"
+            question_name: "Nom de famille ?"
+            question_description: ""
+            variable: "lastname"
+            choices: ""
+            min: 0
+            max: 255
+            required: yes
+            default: ""
+          - type: "text"
+            question_name: "Email ?"
+            question_description: ""
+            variable: "email"
+            choices: ""
+            min: 0
+            max: 255
+            required: no
+            default: ""
