@@ -26,6 +26,15 @@
       organization: "Default"
       state: present
 
+  - name: "Create target inventory"
+    awx.awx.inventory:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "EC2 Managed"
+      description: "EC2 managed"
+      organization: "Default"
+      state: present
+
   - name: "Create AWX Host"
     awx.awx.host:
       controller_host: "{{ awx_hostname }}"
@@ -50,7 +59,7 @@
         security_token: ""
       state: present
 
-  - name: "Create Tower Credentials"
+  - name: "Create admin Tower Credentials"
     awx.awx.credential:
       controller_host: "{{ awx_hostname }}"
       controller_oauthtoken: "{{ awx_token }}"
@@ -78,7 +87,7 @@
         become_method: "sudo"
         become_username: "root"
 
-  - name: "Create AWX Template"
+  - name: "Create initial Template"
     awx.awx.job_template:
       name: "EC2 Provisioner"
       project: "EC2 manager"
@@ -96,8 +105,8 @@
       ask_variables_on_launch: yes
       job_type: "run"
       survey_spec:
-        name: "Simple Survey"
-        description: "Description of the simple survey"
+        name: "Very Simple Survey"
+        description: "Please fill this very easy form"
         spec:
           - type: "text"
             question_name: "Prenom ?"
@@ -126,3 +135,96 @@
             max: 255
             required: no
             default: ""
+
+  - name: "Generate Password"
+    set_fact: "user_pass={{ lookup('password', 'awx_unprivileged_password length=12 chars=ascii_letters,digits')}}"
+    no_log: true
+
+  - name: "Create unprivileged AWX user"
+    awx.awx.user:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      is_superuser: no
+      is_system_auditor: no
+      email: "awx@localhost"
+      username: ec2_manager
+      password: "{{ user_pass }}"
+      state: present
+
+  - name: "Create token for AWX user"
+    awx.awx.token:
+      controller_host: "{{ awx_hostname }}"
+      controller_username: ec2_manager
+      controller_password: "{{ user_pass }}"
+      scope: write
+      state: present
+
+  - name: "Get token from ansible facts"
+    set_fact: "awx_unprivileged_token={{ controller_token.token }}"
+    no_log: true
+
+  - name: "Create unprivileged Tower Credentials"
+    awx.awx.credential:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWX unprivileged token"
+      description: "used for provisioning"
+      organization: "Default"
+      credential_type: "Ansible Tower"
+      inputs:
+        verify_ssl: yes
+        host: "{{ awx_hostname }}"
+        oauth_token: "{{ awx_unprivileged_token }}"
+      state: present
+
+  - name: "Assign organization role for AWX user"
+    awx.awx.role:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      user: ec2_manager
+      organizations:
+        - "Default"
+      state: present
+      role: member
+
+  - name: "Assign inventory role for AWX user"
+    awx.awx.role:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      user: ec2_manager
+      role: "{{ item }}"
+      inventories:
+        - "EC2 Managed"
+      state: present
+    loop:
+      - use
+      - update
+
+  - name: "Assign credential role for AWX user"
+    awx.awx.role:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      user: ec2_manager
+      role: "{{ item }}"
+      credentials:
+        - "AWX unprivileged token"
+      state: present
+    loop:
+      - use
+      - read
+
+  - name: "Assign project role for AWX user"
+    awx.awx.role:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      user: ec2_manager
+      role: use
+      projects:
+        - EC2 manager
+      state: present
+
+  - name: "Debugging purpose get token"
+    no_log: true
+    copy:
+      content: "{{ controller_token }}"
+      dest: "awx_unprivileged_token.json"
