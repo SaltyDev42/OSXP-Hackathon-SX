@@ -19,11 +19,12 @@ resource "local_file" "bastion_hosts" {
 
 resource "local_file" "awx_vars" {
   sensitive_content = templatefile("${path.module}/scripts/vars-awx.yaml.tpl", {
-    domain = aws_route53_zone.osxp.name
+    domain      = aws_route53_zone.osxp.name
     domainlocal = aws_route53_zone.osxp_private.name
-    access_key = aws_iam_access_key.osxp_awx_manager.id
-    secret_key = aws_iam_access_key.osxp_awx_manager.secret
+    access_key  = aws_iam_access_key.osxp_awx_manager.id
+    secret_key  = aws_iam_access_key.osxp_awx_manager.secret
+    project     = var.project
   })
-  filename = "${path.module}/ansible-awx/vars.yaml"
+  filename        = "${path.module}/ansible-awx/vars.yaml"
   file_permission = "0600"
 }

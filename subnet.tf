@@ -4,7 +4,7 @@ resource "aws_subnet" "osxp" {
   availability_zone = "eu-west-3a"
 
   tags = {
-    Name  = "${var.project}-vpc"
+    Name  = "${var.project}-subnet"
     owner = var.project
   }
 }

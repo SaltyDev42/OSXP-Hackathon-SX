@@ -39,35 +39,52 @@ resource "aws_iam_user_policy" "osxp_awx_manager" {
             "Effect": "Allow",
             "Action": [
                 "ec2:TerminateInstances",
-                "ec2:CreateTags",
-                "ec2:RunInstances"
+                "ec2:CreateTags"
             ],
-            "Resource": "arn:aws:ec2:eu-west-3::*"
+            "Resource": "arn:aws:ec2:eu-west-3:*:instance/*"
         },
         {
             "Effect": "Allow",
             "Action": [
                 "route53:GetChange",
-                "route53:GetHostedZone"
+                "route53:GetHostedZone",
+                "route53:ListHostedZones",
+                "route53:ListTagsForResource"
             ],
             "Resource": "*"
         },
         {
             "Effect" : "Allow",
             "Action" : [
-                "route53:ChangeResourceRecordSets"
+                "route53:ChangeResourceRecordSets",
+                "route53:ListResourceRecordSets"
             ],
-            "Resource" : [
-                "${aws_route53_zone.osxp.arn}"
-            ]
+            "Resource" : "${aws_route53_zone.osxp.arn}"
         },
         {
             "Effect": "Allow",
             "Action": [
                 "ec2:DescribeSubnets",
-                "ec2:DescribeSecurityGroups"
+                "ec2:DescribeInstance*",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeLaunchTemplates",
+                "ec2:DescribeTags",
+                "ec2:DescribeVolume*"
             ],
-            "Resource": "arn:aws:ec2:eu-west-3::*"
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "ec2:RunInstances",
+            "Resource": [
+                "${aws_subnet.osxp.arn}",
+                "arn:aws:ec2:eu-west-3:*:network-interface/*",
+                "arn:aws:ec2:eu-west-3:*:instance/*",
+                "arn:aws:ec2:eu-west-3:*:volume/*",
+                "arn:aws:ec2:eu-west-3::image/ami-*",
+                "arn:aws:ec2:eu-west-3:*:key-pair/*",
+                "${aws_security_group.osxp_all.arn}"
+            ]
         }
     ]
 }

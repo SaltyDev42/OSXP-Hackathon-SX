@@ -7,6 +7,15 @@ output "certbot_secretkey" {
   sensitive = true
 }
 
+output "awx_manager_accesskey" {
+  value = aws_iam_access_key.osxp_awx_manager.id
+}
+
+output "awx_manager_secretkey" {
+  value     = aws_iam_access_key.osxp_awx_manager.secret
+  sensitive = true
+}
+
 output "awx_url" {
   value = "https://${aws_route53_record.osxp_awx.name}.${aws_route53_zone.osxp.name}"
 }
