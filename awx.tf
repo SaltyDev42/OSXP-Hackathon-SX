@@ -1,11 +1,11 @@
 ## Image Rocky Linux, Multiple image available, normal is used
 data "aws_ami" "rocky" {
   most_recent = true
-  owners      = ["679593333241"]
+  owners      = [var.ami_owner]
 
   filter {
     name   = "name"
-    values = ["Rocky Linux 8.4-*"]
+    values = [var.ami_name]
   }
 }
 

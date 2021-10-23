@@ -24,6 +24,9 @@ resource "local_file" "awx_vars" {
     access_key  = aws_iam_access_key.osxp_awx_manager.id
     secret_key  = aws_iam_access_key.osxp_awx_manager.secret
     project     = var.project
+    ec2_type    = var.ec2_type
+    region      = var.region
+    ami_id      = data.aws_ami.rocky.image_id
   })
   filename        = "${path.module}/ansible-awx/vars.yaml"
   file_permission = "0600"
