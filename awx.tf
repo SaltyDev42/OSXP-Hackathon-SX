@@ -11,7 +11,7 @@ data "aws_ami" "rocky" {
 
 resource "aws_instance" "osxp_bastion" {
   ami                    = data.aws_ami.rocky.image_id
-  instance_type          = "t2.small"
+  instance_type          = "t3a.micro"
   subnet_id              = aws_subnet.osxp.id
   vpc_security_group_ids = [aws_security_group.osxp_bastion.id]
 
@@ -32,7 +32,7 @@ resource "aws_instance" "osxp_bastion" {
 
 resource "aws_instance" "osxp_awx" {
   ami                    = data.aws_ami.rocky.image_id
-  instance_type          = "t2.xlarge"
+  instance_type          = "t3a.xlarge"
   subnet_id              = aws_subnet.osxp.id
   vpc_security_group_ids = [aws_security_group.osxp_awx.id]
 

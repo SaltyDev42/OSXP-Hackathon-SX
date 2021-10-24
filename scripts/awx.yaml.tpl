@@ -21,10 +21,10 @@ hostname: ${name}
 fqdn: ${name}.${project}.${domain}
 
 runcmd:
-  - "sudo yum install python3 -y"
   - "sudo dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo"
-  - "sudo yum install docker-ce -y"
+  - "sudo dnf config-manager --add-repo=https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo"
+  - "sudo yum install docker-ce git python3 terraform -y"
   - "sudo pip3 install --upgrade pip"
   - "sudo pip3 install docker-compose"
-  - "systemctl enable --now docker"
-  - "alternatives --install /usr/bin/docker-compose docker-compose /usr/local/bin/docker-compose 100"
+  - "sudo systemctl enable --now docker"
+  - "sudo alternatives --install /usr/bin/docker-compose docker-compose /usr/local/bin/docker-compose 100"
