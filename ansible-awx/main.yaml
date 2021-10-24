@@ -5,16 +5,28 @@
   become: false
   tasks:
 
-  - name: "Create AWX Project"
+  - name: "Create EC2 Manager project"
     awx.awx.project:
       controller_host: "{{ awx_hostname }}"
       controller_oauthtoken: "{{ awx_token }}"
       description: "This is not going to be very fun"
       name: "EC2 manager"
       organization: "Default"
-      scm_branch: "main"
+      scm_branch: "testing"
       scm_type: "git"
       scm_url: "https://github.com/SaltyDev42/OSXP-Ansible-SX"
+      state: "present"
+
+  - name: "Create EC2 Grader project"
+    awx.awx.project:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      description: "EC2 grader (yes it's plug'n'play)"
+      name: "{{ grade_project }}"
+      organization: "Default"
+      scm_branch: "{{ grade_branch }}"
+      scm_type: "git"
+      scm_url: "{{ grade_repository}}"
       state: "present"
 
   - name: "Create AWX Inventory"
@@ -35,6 +47,21 @@
       organization: "Default"
       state: present
 
+  - name: "Generate Password"
+    set_fact: "user_pass={{ lookup('password', 'awx_unprivileged_password length=12 chars=ascii_letters,digits')}}"
+    no_log: true
+  
+  - name: "Create unprivileged AWX user"
+    awx.awx.user:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      is_superuser: no
+      is_system_auditor: no
+      email: "awx@localhost"
+      username: ec2_manager
+      password: "{{ user_pass }}"
+      state: present
+
   - name: "Create AWX Host"
     awx.awx.host:
       controller_host: "{{ awx_hostname }}"
@@ -43,6 +70,32 @@
       description: "AWX is containerized, we want to be on the host instead of the container"
       inventory: "AWX localhost baremetal"
       enabled: yes
+      state: present
+
+  - name: "Create token for AWX user"
+    awx.awx.token:
+      controller_host: "{{ awx_hostname }}"
+      controller_username: ec2_manager
+      controller_password: "{{ user_pass }}"
+      scope: write
+      state: present
+
+  - name: "Get token from ansible facts"
+    set_fact: "awx_unprivileged_token={{ controller_token.token }}"
+    no_log: true
+
+  - name: "Create unprivileged Tower Credentials"
+    awx.awx.credential:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "AWX unprivileged token"
+      description: "used for provisioning"
+      organization: "Default"
+      credential_type: "Ansible Tower"
+      inputs:
+        verify_ssl: yes
+        host: "{{ awx_hostname }}"
+        oauth_token: "{{ awx_unprivileged_token }}"
       state: present
 
   - name: "Create AWS Credentials"
@@ -87,22 +140,118 @@
         become_method: "sudo"
         become_username: "root"
 
-  - name: "Create initial Template"
+  - name: "Create EC2 Destroyer template"
     awx.awx.job_template:
-      name: "EC2 Provisioner"
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "The EC2 Destroyer"
+      project: "EC2 manager"
+      organization: "Default"
+      become_enabled: yes
+      allow_simultaneous: yes
+      ask_inventory_on_launch: yes
+      ask_credential_on_launch: yes
+      ask_limit_on_launch: yes
+      ask_variables_on_launch: yes
+      playbook: "destroy.yaml"
+      job_type: "run"
+
+  - name: "Create EC2 Destroyer part 2"
+    awx.awx.job_template:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "EC2 Destroy"
+      project: "EC2 manager"
+      organization: "Default"
+      become_enabled: no
+      allow_simultaneous: yes
+      ask_inventory_on_launch: yes
+      ask_credential_on_launch: yes
+      ask_limit_on_launch: yes
+      ask_variables_on_launch: yes
+      playbook: "destroyec2.yaml"
+      job_type: "run"
+
+  - name: "Create Check Activity template"
+    awx.awx.job_template:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "The EC2 Checker"
+      project: "EC2 manager"
+      organization: "Default"
+      allow_simultaneous: yes
+      become_enabled: no
+      ask_inventory_on_launch: yes
+      ask_credential_on_launch: yes
+      ask_limit_on_launch: yes
+      ask_variables_on_launch: yes
+      playbook: "checker.yaml"
+      job_type: "run"
+
+  ## This template only does 1 task
+  ## Saving the content from extra_vars into files.
+  - name: "Create copy template"
+    awx.awx.job_template:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "The Copy Master"
+      project: "EC2 manager"
+      organization: "Default"
+      allow_simultaneous: yes
+      become_enabled: no
+      credentials:
+        - "AWX SSH"
+      inventory: "AWX localhost baremetal"
+      ask_inventory_on_launch: no
+      ask_credential_on_launch: no
+      ask_limit_on_launch: no
+      ask_variables_on_launch: yes
+      playbook: "copy.yaml"
+      job_type: "run"
+
+  - name: "Create Grading template"
+    awx.awx.job_template:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "{{ grade_template }}"
+      project: "{{ grade_project }}"
+      organization: "Default"
+      allow_simultaneous: yes
+      become_enabled: no
+      ask_inventory_on_launch: yes
+      ask_credential_on_launch: yes
+      ask_limit_on_launch: yes
+      ask_variables_on_launch: yes
+      playbook: "{{ grade_playbook }}"
+      job_type: "run"
+
+  - name: "Create EC2 Provisioner template"
+    awx.awx.job_template:
+      name: "The EC2 Creator"
       project: "EC2 manager"
       organization: "Default"
       allow_simultaneous: no
       become_enabled: no
       controller_host: "{{ awx_hostname }}"
       controller_oauthtoken: "{{ awx_token }}"
-      playbook: "foo.yaml" ## TO BE MODIFIED
+      playbook: "init.yaml"
       inventory: "AWX localhost baremetal"
       credentials:
         - "AWX SSH"
-        - "AWX oauth"
+        - "AWX unprivileged token"
+        - "AWS token"
       survey_enabled: yes
-      ask_variables_on_launch: yes
+      extra_vars:
+        project: "{{ project }}"
+        domain: "{{ domain }}"
+        instance_type: "{{ ec2_type }}"
+        region: "{{ region }}"
+        ami_id: "{{ ami_id }}"
+        idle_timeout: "{{ idle_timeout }}"
+        alive_timeout: "{{ alive_timeout }}"
+        grade_template: "{{ grade_template }}"
+        file_to_copy: "{{ file_to_copy }}"
+        file_sizelimit: "{{ file_sizelimit }}"
       job_type: "run"
       survey_spec:
         name: "Very Simple Survey"
@@ -136,47 +285,6 @@
             required: no
             default: ""
 
-  - name: "Generate Password"
-    set_fact: "user_pass={{ lookup('password', 'awx_unprivileged_password length=12 chars=ascii_letters,digits')}}"
-    no_log: true
-
-  - name: "Create unprivileged AWX user"
-    awx.awx.user:
-      controller_host: "{{ awx_hostname }}"
-      controller_oauthtoken: "{{ awx_token }}"
-      is_superuser: no
-      is_system_auditor: no
-      email: "awx@localhost"
-      username: ec2_manager
-      password: "{{ user_pass }}"
-      state: present
-
-  - name: "Create token for AWX user"
-    awx.awx.token:
-      controller_host: "{{ awx_hostname }}"
-      controller_username: ec2_manager
-      controller_password: "{{ user_pass }}"
-      scope: write
-      state: present
-
-  - name: "Get token from ansible facts"
-    set_fact: "awx_unprivileged_token={{ controller_token.token }}"
-    no_log: true
-
-  - name: "Create unprivileged Tower Credentials"
-    awx.awx.credential:
-      controller_host: "{{ awx_hostname }}"
-      controller_oauthtoken: "{{ awx_token }}"
-      name: "AWX unprivileged token"
-      description: "used for provisioning"
-      organization: "Default"
-      credential_type: "Ansible Tower"
-      inputs:
-        verify_ssl: yes
-        host: "{{ awx_hostname }}"
-        oauth_token: "{{ awx_unprivileged_token }}"
-      state: present
-
   - name: "Assign organization role for AWX user"
     awx.awx.role:
       controller_host: "{{ awx_hostname }}"
@@ -185,20 +293,29 @@
       organizations:
         - "Default"
       state: present
-      role: member
+      role: "{{ item }}"
+    loop:
+      - "member"
 
   - name: "Assign inventory role for AWX user"
     awx.awx.role:
       controller_host: "{{ awx_hostname }}"
       controller_oauthtoken: "{{ awx_token }}"
       user: ec2_manager
-      role: "{{ item }}"
+      role: admin
       inventories:
         - "EC2 Managed"
       state: present
-    loop:
-      - use
-      - update
+
+  - name: "Assign RO inventory role for AWX user"
+    awx.awx.role:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      user: ec2_manager
+      role: "use"
+      inventories:
+        - "AWX localhost baremetal"
+      state: present
 
   - name: "Assign credential role for AWX user"
     awx.awx.role:
@@ -208,19 +325,25 @@
       role: "{{ item }}"
       credentials:
         - "AWX unprivileged token"
+        - "AWX SSH"
+        - "AWS token"
       state: present
     loop:
       - use
-      - read
 
-  - name: "Assign project role for AWX user"
+  - name: "Assign template role for AWX user"
     awx.awx.role:
       controller_host: "{{ awx_hostname }}"
       controller_oauthtoken: "{{ awx_token }}"
       user: ec2_manager
-      role: use
-      projects:
-        - EC2 manager
+      role: execute
+      job_templates:
+        - "The EC2 Destroyer"
+        - "The EC2 Checker"
+        - "The EC2 Creator"
+        - "The Copy Master"
+        - "EC2 Destroy"
+        - "{{ grade_template }}"
       state: present
 
   - name: "Debugging purpose get token"

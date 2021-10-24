@@ -1,0 +1,24 @@
+---
+## Everything is in minute
+## Time the instance can idle before it's killed
+idle_timeout: "2"
+## Time the instance can live after the user has connected once
+alive_timeout: "1"
+grade_repository: "https://github.com/SaltyDev42/OSXP-GradingExample-SX"
+grade_playbook: "main.yaml"
+## This can be any name you want
+grade_project: "EC2 Example Grader"
+grade_template: "EC2 Grader"
+grade_branch: "main"
+
+## The copy playbook will template the following string
+## {login} -> passwd user used to login on instance
+## {user} -> user used for domain and the likes
+## It will results in a tarball file
+## File not found will be ignored
+file_to_copy:
+- '/home/{login}/.bash_history'
+
+## if total copied exceed this size, nothing will be copied
+## The value below equals to 50 MiB
+file_sizelimit: "52428800"
