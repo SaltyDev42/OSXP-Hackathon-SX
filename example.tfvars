@@ -1,0 +1,7 @@
+domain      = "example.com"
+domainlocal = "example.local"
+project     = "osxp"
+region      = "eu-west-3"
+ec2_type    = "t3a.micro"
+ami_owner   = "679593333241"
+ami_name    = "Rocky Linux 8.4-*"
