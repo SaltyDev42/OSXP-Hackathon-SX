@@ -26,8 +26,20 @@
       organization: "Default"
       scm_branch: "{{ grade_branch }}"
       scm_type: "git"
-      scm_url: "{{ grade_repository}}"
+      scm_url: "{{ grade_repository }}"
       state: "present"
+
+  - name: "Create EC2 Resource provisioner"
+    awx.awx.project:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      description: "EC2 Resource Provisioner (yes it's plug'n'play)"
+      name: "{{ resource_project }}"
+      organization: "Default"
+      scm_branch: "{{ resource_branch }}"
+      scm_type: "git"
+      scm_url: "{{ resource_repository }}"
+      state: present
 
   - name: "Create AWX Inventory"
     awx.awx.inventory:
@@ -140,6 +152,22 @@
         become_method: "sudo"
         become_username: "root"
 
+  - name: "Create EC2 resource provisioner template"
+    awx.awx.job_template:
+      controller_host: "{{ awx_hostname }}"
+      controller_oauthtoken: "{{ awx_token }}"
+      name: "{{ resource_template }}"
+      project: "{{ resource_project }}"
+      organization: "Default"
+      become_enabled: yes
+      allow_simultaneous: yes
+      ask_inventory_on_launch: yes
+      ask_credential_on_launch: yes
+      ask_limit_on_launch: yes
+      ask_variables_on_launch: yes
+      playbook: "{{ resource_playbook }}"
+      job_type: "run"
+      
   - name: "Create EC2 Destroyer template"
     awx.awx.job_template:
       controller_host: "{{ awx_hostname }}"
@@ -250,6 +278,7 @@
         idle_timeout: "{{ idle_timeout }}"
         alive_timeout: "{{ alive_timeout }}"
         grade_template: "{{ grade_template }}"
+        resource_template: "{{ resource_template }}"
         file_to_copy: "{{ file_to_copy }}"
         file_sizelimit: "{{ file_sizelimit }}"
       job_type: "run"
@@ -344,6 +373,7 @@
         - "The Copy Master"
         - "EC2 Destroy"
         - "{{ grade_template }}"
+        - "{{ resource_template }}"
       state: present
 
   - name: "Debugging purpose get token"

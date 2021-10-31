@@ -6,10 +6,17 @@ idle_timeout: "2"
 alive_timeout: "1"
 grade_repository: "https://github.com/SaltyDev42/OSXP-GradingExample-SX"
 grade_playbook: "main.yaml"
+grade_branch: "main"
 ## This can be any name you want
 grade_project: "EC2 Example Grader"
 grade_template: "EC2 Grader"
-grade_branch: "main"
+
+resource_repository: "https://github.com/SaltyDev42/OSXP-ResourceProvisioning-SX"
+resource_branch: "main"
+resource_playbook: "main.yaml"
+## This can be any name you want
+resource_project: "EC2 Resource Provisioner"
+resource_template: "The EC2 Resource Provisioner"
 
 ## The copy playbook will template the following string
 ## {login} -> passwd user used to login on instance
