@@ -1,0 +1,1 @@
+curl -k --user admin:<password> -H Content-type: application/json https://<fqdn>/api/v2/tokens/
